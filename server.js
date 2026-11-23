@@ -8,49 +8,49 @@ let students = [
     {
         id: 201,
         rollNumber: "CSE2401",
-        name: "Rohit Sharma",
+        name: "Aarav Sharma",
         branch: "CSE",
         semester: 3,
-        email: "rohit@gmail.com"
+        email: "aarav@example.com"
     },
     {
         id: 202,
         rollNumber: "ECE2402",
-        name: "Anjali Verma",
+        name: "Diya Verma",
         branch: "ECE",
         semester: 3,
-        email: "anjali@gmail.com"
+        email: "diya@example.com"
     },
     {
         id: 203,
         rollNumber: "CSE2403",
-        name: "Vikas Singh",
+        name: "Kabir Singh",
         branch: "CSE",
         semester: 3,
-        email: "vikas@gmail.com"
+        email: "kabir@example.com"
     }
 ];
 
+// GET all students
 app.get('/api/students', (req, res) => {
     res.status(200).json(students);
 });
 
+// POST a new student
 app.post('/api/students', (req, res) => {
     const { rollNumber, name, branch, semester, email } = req.body;
 
-    if (!rollNumber || !name || !branch || !semester || !email) {
+    if (!rollNumber || !name || !branch ||
+        !Number.isInteger(semester) || semester <= 0 ||
+        !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({
-            message: "All fields are required"
+            message: "Please provide valid student details"
         });
     }
 
-    if (!Number.isInteger(semester) || semester <= 0) {
-        return res.status(400).json({
-            message: "Invalid semester"
-        });
-    }
-
-    const exists = students.find(s => s.rollNumber === rollNumber);
+    const exists = students.find(
+        student => student.rollNumber.toLowerCase() === rollNumber.trim().toLowerCase()
+    );
 
     if (exists) {
         return res.status(400).json({
@@ -59,12 +59,12 @@ app.post('/api/students', (req, res) => {
     }
 
     const newStudent = {
-        id: Math.max(200, ...students.map(s => s.id)) + 1,
-        rollNumber: rollNumber,
-        name: name,
-        branch: branch,
-        semester: semester,
-        email: email
+        id: Math.max(200, ...students.map(student => student.id)) + 1,
+        rollNumber: rollNumber.trim(),
+        name: name.trim(),
+        branch: branch.trim(),
+        semester,
+        email: email.trim()
     };
 
     students.push(newStudent);
@@ -72,6 +72,24 @@ app.post('/api/students', (req, res) => {
     res.status(201).json(newStudent);
 });
 
+// FILTER students by branch
+app.get('/api/students/filter', (req, res) => {
+    const branch = req.query.branch;
+
+    if (!branch) {
+        return res.status(400).json({
+            message: "Branch query parameter is required"
+        });
+    }
+
+    const result = students.filter(
+        student => student.branch.toLowerCase() === branch.toLowerCase()
+    );
+
+    res.status(200).json(result);
+});
+
+// GET student by ID
 app.get('/api/students/:id', (req, res) => {
     const id = Number(req.params.id);
 
@@ -86,6 +104,7 @@ app.get('/api/students/:id', (req, res) => {
     res.status(200).json(student);
 });
 
+// PUT update student
 app.put('/api/students/:id', (req, res) => {
     const id = Number(req.params.id);
 
@@ -99,40 +118,38 @@ app.put('/api/students/:id', (req, res) => {
 
     const { rollNumber, name, branch, semester, email } = req.body;
 
-    if (!rollNumber || !name || !branch || !semester || !email) {
+    if (!rollNumber || !name || !branch ||
+        !Number.isInteger(semester) || semester <= 0 ||
+        !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({
-            message: "All fields are required"
+            message: "Please provide valid student details"
         });
     }
 
-    if (!Number.isInteger(semester) || semester <= 0) {
-        return res.status(400).json({
-            message: "Invalid semester"
-        });
-    }
-
-    const exists = students.find(
-        (s, i) => i !== index && s.rollNumber === rollNumber
+    const duplicate = students.find(
+        (s, i) => i !== index &&
+        s.rollNumber.toLowerCase() === rollNumber.trim().toLowerCase()
     );
 
-    if (exists) {
+    if (duplicate) {
         return res.status(400).json({
             message: "Roll number already exists"
         });
     }
 
     students[index] = {
-        id: id,
-        rollNumber: rollNumber,
-        name: name,
-        branch: branch,
-        semester: semester,
-        email: email
+        id,
+        rollNumber: rollNumber.trim(),
+        name: name.trim(),
+        branch: branch.trim(),
+        semester,
+        email: email.trim()
     };
 
     res.status(200).json(students[index]);
 });
 
+// DELETE student
 app.delete('/api/students/:id', (req, res) => {
     const id = Number(req.params.id);
 
@@ -151,24 +168,9 @@ app.delete('/api/students/:id', (req, res) => {
     });
 });
 
-app.get('/api/students/filter', (req, res) => {
-    const branch = req.query.branch;
-
-    if (!branch) {
-        return res.status(400).json({
-            message: "Please enter branch"
-        });
-    }
-
-    const result = students.filter(
-        s => s.branch.toLowerCase() === branch.toLowerCase()
-    );
-
-    res.status(200).json(result);
-});
-
+// Start server
 const PORT = 3000;
 
 app.listen(PORT, () => {
-    console.log("Server is running on port " + PORT);
+    console.log(`Server is running on port ${PORT}`);
 });
